@@ -1,124 +1,78 @@
-import discord
-from discord.ext import commands
-import youtube_dl
+import os
 
-# Создаем объект бота
-bot = commands.Bot(command_prefix='!')
+from discord import FFmpegOpusAudio, FFmpegPCMAudio
+from discord.ext.commands import Bot
+from discord.ext.commands.errors import CommandInvokeError
+from config import TOKEN
 
-# Устанавливаем параметры youtube-dl для извлечения аудио
-ytdl_format_options = {
-    'format': 'bestaudio/best',
-    'postprocessors': [{
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'mp3',
-        'preferredquality': '192',
-    }],
-    'noplaylist': True,
-}
-
-ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
-
-# Полный список радиостанций Radio Record
-stations = {
-    'record': 'http://air2.radiorecord.ru:805/rr_320',
-    'pirate_station': 'http://air2.radiorecord.ru:805/ps_320',
-    'trance': 'http://air2.radiorecord.ru:805/trance_320',
-    'deep': 'http://air2.radiorecord.ru:805/deep_320',
-    'house': 'http://air2.radiorecord.ru:805/house_320',
-    'chillout': 'http://air2.radiorecord.ru:805/chil_320',
-    'vip_house': 'http://air2.radiorecord.ru:805/vip_320',
-    'techno': 'http://air2.radiorecord.ru:805/tehno_320',
-    'progressive': 'http://air2.radiorecord.ru:805/progr_320',
-    'russian_mixes': 'http://air2.radiorecord.ru:805/rus_320',
-    'trap': 'http://air2.radiorecord.ru:805/trap_320',
-    'future_house': 'http://air2.radiorecord.ru:805/fut_320',
-    'minimal': 'http://air2.radiorecord.ru:805/mini_320',
-    'hardstyle': 'http://air2.radiorecord.ru:805/teo_320',
-    'goa_psy': 'http://air2.radiorecord.ru:805/goa_320',
-    'russian_gold': 'http://air2.radiorecord.ru:805/gold_320',
-    'pump': 'http://air2.radiorecord.ru:805/pump_320',
-    'breaks': 'http://air2.radiorecord.ru:805/brks_320',
-    'big_room': 'http://air2.radiorecord.ru:805/dub_320',
-    'symphonic': 'http://air2.radiorecord.ru:805/symh_320',
-    'hard_bass': 'http://air2.radiorecord.ru:805/tmd_320',
-    'classic': 'http://air2.radiorecord.ru:805/cla_320',
-    'jackin_house': 'http://air2.radiorecord.ru:805/jack_320',
-    'ukraine_hits': 'http://air2.radiorecord.ru:805/ukr_320',
-    'techno_fm': 'http://air2.radiorecord.ru:805/tecno_320',
-    'tropical': 'http://air2.radiorecord.ru:805/trop_320',
-    'progressive_psy': 'http://air2.radiorecord.ru:805/prog_320',
-    'nu_disco': 'http://air2.radiorecord.ru:805/nud_320',
-    'retro': 'http://air2.radiorecord.ru:805/rrretro_320',
-    'drum_n_bass': 'http://air2.radiorecord.ru:805/dnb_320',
-    'russian_club': 'http://air2.radiorecord.ru:805/rclub_320',
-    'liquid_funk': 'http://air2.radiorecord.ru:805/liquid_320',
-    'gabber': 'http://air2.radiorecord.ru:805/gab_320',
-    'pop': 'http://air2.radiorecord.ru:805/pop_320',
-    'drum_n_bass_rewind': 'http://air2.radiorecord.ru:805/dnbr_320',
-    'deep_classic': 'http://air2.radiorecord.ru:805/dcl_320',
-    'dubstep': 'http://air2.radiorecord.ru:805/dub_320',
-    'k-pop': 'http://air2.radiorecord.ru:805/kpop_320',
-    'rap': 'http://air2.radiorecord.ru:805/rap_320',
-    'future_bass': 'http://air2.radiorecord.ru:805/fbas_320',
-    'chillout_mixtapes': 'http://air2.radiorecord.ru:805/chill2_320',
-    'speedy_tek': 'http://air2.radiorecord.ru:805/speed_320',
-}
+# A spot to keep these details handy while you're collecting them...
+#
+# client id:
+# public key:
+# client secret:
+# bot permissions: 66583360
+# TOKEN:
 
 
-# Класс для управления аудиопотоком
-class YTDLSource(discord.PCMVolumeTransformer):
-    def __init__(self, source, *, data, volume=0.5):
-        super().__init__(source, volume)
-        self.data = data
+PREFIX = os.getenv("!")  # e.g. "!"
+SOURCE = os.getenv("http://nthmost.net:8000/mutiny-studio")  # e.g. "http://nthmost.net:8000/mutiny-studio"
+ENCODING = "ogg"  # options: ogg, mp3  (default: ogg)
 
-    @classmethod
-    async def from_url(cls, url, loop=None, stream=True):
-        loop = loop or asyncio.get_event_loop()
-        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
+client = Bot(command_prefix=list(PREFIX))
 
-        if 'entries' in data:
-            data = data['entries'][0]
-
-        filename = data['url'] if stream else ytdl.prepare_filename(data)
-        return cls(discord.FFmpegPCMAudio(filename), data=data)
+player = None
 
 
-# Команда для подключения к голосовому каналу
-@bot.command(name='join')
-async def join(ctx):
-    if not ctx.message.author.voice:
-        await ctx.send("You are not in a voice channel.")
+@client.event
+async def on_ready():
+    print('KSTK Player Ready')
+
+
+@client.command(name="whoami")
+async def whoami(ctx):
+    await ctx.send(f"You are {ctx.message.author.name}")
+
+
+@client.command(name="web_listeners")
+async def web_listeners(ctx):
+    listeners = 5
+    await ctx.send(f"Listeners connected directly to {SOURCE}: {listeners}")
+
+
+def do_play(src):
+    global player
+    try:
+        channel = ctx.message.author.voice.channel
+    except AttributeError:
+        # user is not in a Voice Channel
+        await ctx.send(f"You need to join a Voice Channel for me to know where to play the stream!")
         return
 
-    channel = ctx.message.author.voice.channel
-    await channel.connect()
+    try:
+        player = await channel.connect()
+    except CommandInvokeError:
+        print("Attempt to play without user in channel")
+    except Exception as err:
+        print(err)
+        pass
+    if player:
+        if ENCODING == "mp3":
+            player.play(FFmpegPCMAudio(src))
+        else:
+            player.play(FFmpegOpusAudio(src))
+    else:
+        print("Could not initialize player.")
 
 
-# Команда для игры радио
-@bot.command(name='play')
-async def play(ctx, station_name: str):
-    if ctx.voice_client is None:
-        await ctx.send("Bot is not connected to a voice channel.")
-        return
-
-    if station_name not in stations:
-        await ctx.send(f"Station {station_name} is not available. Available stations: {', '.join(stations.keys())}")
-        return
-
-    station_url = stations[station_name]
-    async with ctx.typing():
-        player = await YTDLSource.from_url(station_url, loop=bot.loop, stream=True)
-        ctx.voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
-
-    await ctx.send(f'Now playing: {station_name}')
+@client.command(aliases=['p', 'pla'])
+async def play(ctx):
+    do_play(SOURCE)
 
 
-# Команда для отключения от голосового канала
-@bot.command(name='leave')
-async def leave(ctx):
-    if ctx.voice_client is not None:
-        await ctx.voice_client.disconnect()
+@client.command(aliases=['s', 'stp'])
+async def stop(ctx):
+    player.stop()
 
 
 # Запуск бота с токеном (замените "YOUR_TOKEN" на ваш реальный токен)
-bot.run('YOUR_TOKEN')
+client.run(TOKEN)
