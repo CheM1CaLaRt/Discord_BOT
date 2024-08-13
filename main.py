@@ -1,13 +1,44 @@
-from config import TOKEN
-
+from config import TOKEN, TXTROB, AUDIOROB, WEATHER_API_KEY
 import discord
 from discord.ext import commands
-
 from gtts import gTTS
 import os
+import requests
+from dotenv import load_dotenv
+
+
+load_dotenv()
+from dotenv import load_dotenv
+def get_weather(city_name):
+    base_url = "http://api.openweathermap.org/data/2.5/weather"
+    params = {
+        'q': city_name,
+        'appid': WEATHER_API_KEY,
+        'units': 'metric',  # Используйте 'imperial' для Fahrenheit
+        'lang': 'ru'  # Для русского языка
+    }
+    response = requests.get(base_url, params=params)
+    data = response.json()
+
+    if data.get('cod') != 200:
+        return "Не удалось получить данные о погоде. Проверьте название города."
+
+    main = data['main']
+    weather = data['weather'][0]
+    description = weather['description']
+    temperature = main['temp']
+    city = data['name']
+
+    return f"Куда Ты собираешься? Останься дома!\nПогода в {city}:\nТемпература: {temperature}°C\nОписание: {description.capitalize()}"
+
+
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.voice_states = True
+intents.guilds = True
+intents.members = True
+
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Словарь радиостанций
@@ -149,7 +180,7 @@ class RadioSelect(discord.ui.Select):
         }
         interaction.guild.voice_client.play(discord.FFmpegPCMAudio(station_url, **ffmpeg_options))
 
-        await interaction.response.send_message(f"Начинаю воспроизводить {station}!")
+        await interaction.response.send_message(f"Начинаю жужать под {station}!")
 
 
 class RadioMenu(discord.ui.View):
@@ -169,7 +200,7 @@ async def play_radio(ctx):
         view = RadioMenu(group)
         await ctx.send("Выберите радиостанцию из списка:", view=view)
 
-@bot.command(name='robert')
+@bot.command(name='rob')
 async def robert(ctx):
     if not await ensure_voice(ctx):
         return
@@ -179,7 +210,7 @@ async def robert(ctx):
         await voice_channel.connect()
 
     # Создание аудиофайла с текстом "Роберт пидор"
-    tts = gTTS(text="Роберт пидор. Ломай меня полностью! ахахахаха ха ха ха ха хуй", lang='ru')
+    tts = gTTS(text=AUDIOROB, lang='ru')
     tts.save("robert.mp3")
 
     # Проигрывание аудиофайла
@@ -189,18 +220,101 @@ async def robert(ctx):
     }
     ctx.voice_client.play(discord.FFmpegPCMAudio("robert.mp3", **ffmpeg_options), after=lambda e: print(f"Finished playing: {e}"))
 
-    await ctx.send("Возьми меня Роб и посмотри на Аврору! Это не я!")
+    await ctx.send(TXTROB)
 
     # Удаление аудиофайла после проигрывания
     while ctx.voice_client.is_playing():
         await discord.utils.sleep_until(ctx.voice_client.is_playing())
 
     os.remove("robert.mp3")
+
+@bot.command(name='vse')
+async def vsjo(ctx):
+    if not await ensure_voice(ctx):
+        return
+
+    voice_channel = ctx.author.voice.channel
+    if ctx.voice_client is None:
+        await voice_channel.connect()
+
+        # Проигрывание аудиофайла
+    ctx.voice_client.stop()
+    ffmpeg_options = {
+        'executable': r'C:\ffmpeg\bin\ffmpeg.exe',  # Укажите полный путь к ffmpeg.exe
+    }
+    ctx.voice_client.play(discord.FFmpegPCMAudio("vse.mp3", **ffmpeg_options))
+    while ctx.voice_client.is_playing():
+        await discord.utils.sleep_until(ctx.voice_client.is_playing())
+@bot.command(name='ger')
+async def german(ctx):
+    if not await ensure_voice(ctx):
+        return
+
+    voice_channel = ctx.author.voice.channel
+    if ctx.voice_client is None:
+        await voice_channel.connect()
+
+        # Проигрывание аудиофайла
+    ctx.voice_client.stop()
+    ffmpeg_options = {
+        'executable': r'C:\ffmpeg\bin\ffmpeg.exe',  # Укажите полный путь к ffmpeg.exe
+    }
+    ctx.voice_client.play(discord.FFmpegPCMAudio("ger.mp3", **ffmpeg_options))
+    while ctx.voice_client.is_playing():
+        await discord.utils.sleep_until(ctx.voice_client.is_playing())
+
+@bot.command(name='est')
+async def estt(ctx):
+    if not await ensure_voice(ctx):
+        return
+
+    voice_channel = ctx.author.voice.channel
+    if ctx.voice_client is None:
+        await voice_channel.connect()
+
+        # Проигрывание аудиофайла
+    ctx.voice_client.stop()
+    ffmpeg_options = {
+        'executable': r'C:\ffmpeg\bin\ffmpeg.exe',  # Укажите полный путь к ffmpeg.exe
+    }
+    ctx.voice_client.play(discord.FFmpegPCMAudio("est.mp3", **ffmpeg_options))
+    while ctx.voice_client.is_playing():
+        await discord.utils.sleep_until(ctx.voice_client.is_playing())
+
+
 @bot.command(name='stopradio')
 async def stop_radio(ctx):
     if ctx.voice_client is not None:
         await ctx.voice_client.disconnect()
         await ctx.send("Остановил радио и отключился от канала.")
+
+
+@bot.command(name='погода')
+async def weather(ctx, *, city: str):
+    weather_info = get_weather(city)
+    await ctx.send(weather_info)
+
+
+@bot.event
+async def on_voice_state_update(member, before, after):
+    # Проверяем, если пользователь зашел в голосовой канал
+    if before.channel is None and after.channel is not None:
+        voice_channel = after.channel
+        voice_client = discord.utils.get(bot.voice_clients, guild=member.guild)
+
+        # Если бот уже в канале, не перезаходим
+        if voice_client and voice_client.channel == voice_channel:
+            return
+
+        # Подключаемся к каналу и воспроизводим MP3
+        if voice_channel:
+            voice_client = await voice_channel.connect()
+            voice_client.play(discord.FFmpegPCMAudio('est.mp3'))
+
+            # Ожидаем завершения воспроизведения и отключаемся
+            while voice_client.is_playing():
+                await discord.utils.sleep_until(voice_client.is_playing())
+            await voice_client.disconnect()
 
 
 bot.run(TOKEN)
