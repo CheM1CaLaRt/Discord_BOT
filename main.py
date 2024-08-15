@@ -191,6 +191,7 @@ class RadioMenu(discord.ui.View):
 
 
 @bot.command(name='playradio')
+@commands.has_permissions(administrator=True)
 async def play_radio(ctx):
     if not await ensure_voice(ctx):
         return
@@ -200,6 +201,11 @@ async def play_radio(ctx):
     for group in station_groups:
         view = RadioMenu(group)
         await ctx.send("Выберите радиостанцию из списка:", view=view)
+
+@play_radio.error
+async def play_radio_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send("У вас нет прав на использование этой команды.")
 
 @bot.command(name='rob')
 async def robert(ctx):
