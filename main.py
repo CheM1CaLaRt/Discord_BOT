@@ -44,6 +44,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Словарь радиостанций
 radio_stations = {
+    "Gaming": "https://gaming.stream.laut.fm/gaming",
     "Record": "https://radiorecord.hostingradio.ru/rr_main96.aacp",
     "Tiesto": "https://radiorecord.hostingradio.ru/tiesto96.aacp",
     "David Guetta": "https://radiorecord.hostingradio.ru/guetta96.aacp",
