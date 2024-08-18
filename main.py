@@ -9,7 +9,7 @@ import asyncio
 
 
 load_dotenv()
-from dotenv import load_dotenv
+
 def get_weather(city_name):
     base_url = "http://api.openweathermap.org/data/2.5/weather"
     params = {
