@@ -322,6 +322,7 @@ async def on_voice_state_update(member, before, after):
         if voice_client is not None and voice_client.is_playing():
             voice_client.stop()  # Останавливаем текущее воспроизведение
 
+        # await voice_client.send(f"{member.display_name}, держи мандаринку!")
         await asyncio.sleep(1)
         # Воспроизводим MP3
         voice_client.play(discord.FFmpegPCMAudio('est.mp3'))
