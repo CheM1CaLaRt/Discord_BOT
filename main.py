@@ -309,7 +309,10 @@ async def on_voice_state_update(member, before, after):
     if before.channel is None and after.channel is not None:
         voice_channel = after.channel
         voice_client = discord.utils.get(bot.voice_clients, guild=member.guild)
-        # station_url = voice_client.source.url
+
+        # Получаем текстовый канал для отправки сообщения
+        text_channel = discord.utils.get(member.guild.text_channels,
+                                         name="musiq")  # Убедитесь, что текстовый канал существует
 
         # Если бот уже подключен к голосовому каналу
         if voice_client is not None:
@@ -322,17 +325,17 @@ async def on_voice_state_update(member, before, after):
         if voice_client is not None and voice_client.is_playing():
             voice_client.stop()  # Останавливаем текущее воспроизведение
 
-        # await voice_client.send(f"{member.display_name}, держи мандаринку!")
+        # Отправляем сообщение в чат
+        if text_channel is not None:
+            await text_channel.send(f"{member.display_name}, держи мандаринку!")
+
         await asyncio.sleep(1)
         # Воспроизводим MP3
         voice_client.play(discord.FFmpegPCMAudio('est.mp3'))
 
-
-        # await voice_client.disconnect()
         # Ждем окончания проигрывания est.mp3
         while voice_client.is_playing():
             await discord.utils.sleep_until(voice_client.is_playing())
-        # Если радиостанция была сохранена, продолжить её воспроизведение
 
 
 
