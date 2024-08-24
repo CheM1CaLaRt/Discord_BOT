@@ -187,6 +187,14 @@ class RadioSelect(discord.ui.Select):
 
         await interaction.response.send_message(f"Начинаю жужать под {station}!")
 
+        # Удаляем сообщение с выбором радиостанции
+        await interaction.message.delete()
+
+        # Удаляем все сообщения с текстом "Выберите радиостанцию из списка:"
+        async for msg in interaction.channel.history(limit=100):
+            if msg.content == "Выберите радиостанцию из списка:":
+                await msg.delete()
+
 
 class RadioMenu(discord.ui.View):
     def __init__(self, stations):
