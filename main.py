@@ -1,4 +1,4 @@
-from config import TOKEN, TXTROB, AUDIOROB, WEATHER_API_KEY
+from config import TOKEN, TXTROB, AUDIOROB, WEATHER_API_KEY, STEAM_API_KEY
 import discord
 from discord.ext import commands
 from gtts import gTTS
@@ -6,6 +6,8 @@ import os
 import requests
 from dotenv import load_dotenv
 import asyncio
+
+
 
 
 load_dotenv()
@@ -358,6 +360,8 @@ async def on_voice_state_update(member, before, after):
         # Возобновляем радио, если ранее оно играло
         if current_station_url:
             voice_client.play(discord.FFmpegPCMAudio(current_station_url, **ffmpeg_options))
+
+
 
 
 bot.run(TOKEN)
