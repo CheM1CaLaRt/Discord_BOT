@@ -182,6 +182,9 @@ class RadioSelect(discord.ui.Select):
         }
         interaction.guild.voice_client.play(discord.FFmpegPCMAudio(station_url, **ffmpeg_options))
 
+        # Сохраняем URL текущей радиостанции
+        interaction.guild.voice_client.current_station_url = station_url
+
         await interaction.response.send_message(f"Начинаю жужать под {station}!")
 
 
@@ -232,7 +235,7 @@ async def robert(ctx):
 
     # Удаление аудиофайла после проигрывания
     while ctx.voice_client.is_playing():
-        await discord.utils.sleep_until(ctx.voice_client.is_playing())
+        await asyncio.sleep(1)
 
     os.remove("robert.mp3")
 
@@ -252,7 +255,8 @@ async def vsjo(ctx):
     }
     ctx.voice_client.play(discord.FFmpegPCMAudio("vse.mp3", **ffmpeg_options))
     while ctx.voice_client.is_playing():
-        await discord.utils.sleep_until(ctx.voice_client.is_playing())
+        await asyncio.sleep(1)
+
 @bot.command(name='ger')
 async def german(ctx):
     if not await ensure_voice(ctx):
@@ -269,7 +273,7 @@ async def german(ctx):
     }
     ctx.voice_client.play(discord.FFmpegPCMAudio("ger.mp3", **ffmpeg_options))
     while ctx.voice_client.is_playing():
-        await discord.utils.sleep_until(ctx.voice_client.is_playing())
+        await asyncio.sleep(1)
 
 @bot.command(name='est')
 async def estt(ctx):
@@ -287,7 +291,7 @@ async def estt(ctx):
     }
     ctx.voice_client.play(discord.FFmpegPCMAudio("est.mp3", **ffmpeg_options))
     while ctx.voice_client.is_playing():
-        await discord.utils.sleep_until(ctx.voice_client.is_playing())
+        await asyncio.sleep(1)
 
 
 @bot.command(name='stopradio')
@@ -312,7 +316,7 @@ async def on_voice_state_update(member, before, after):
 
         # Получаем текстовый канал для отправки сообщения
         text_channel = discord.utils.get(member.guild.text_channels,
-                                         name="musiq")  # Убедитесь, что текстовый канал существует
+                                         name="general")  # Убедитесь, что текстовый канал существует
 
         # Если бот уже подключен к голосовому каналу
         if voice_client is not None:
@@ -322,7 +326,9 @@ async def on_voice_state_update(member, before, after):
             # Если не подключен, подключаемся
             voice_client = await voice_channel.connect()
 
-        if voice_client is not None and voice_client.is_playing():
+        # Сохраняем текущий поток, если радио уже играет
+        current_station_url = getattr(voice_client, 'current_station_url', None)
+        if voice_client.is_playing():
             voice_client.stop()  # Останавливаем текущее воспроизведение
 
         # Отправляем сообщение в чат
@@ -330,13 +336,20 @@ async def on_voice_state_update(member, before, after):
             await text_channel.send(f"{member.display_name}, держи мандаринку!")
 
         await asyncio.sleep(1)
-        # Воспроизводим MP3
-        voice_client.play(discord.FFmpegPCMAudio('est.mp3'))
 
-        # Ждем окончания проигрывания est.mp3
+        # Воспроизводим MP3 файл
+        ffmpeg_options = {
+            'executable': r'C:\ffmpeg\bin\ffmpeg.exe',  # Укажите полный путь к ffmpeg.exe
+        }
+        voice_client.play(discord.FFmpegPCMAudio('est.mp3', **ffmpeg_options))
+
+        # Ждем окончания воспроизведения
         while voice_client.is_playing():
-            await discord.utils.sleep_until(voice_client.is_playing())
+            await asyncio.sleep(1)
 
+        # Возобновляем радио, если ранее оно играло
+        if current_station_url:
+            voice_client.play(discord.FFmpegPCMAudio(current_station_url, **ffmpeg_options))
 
 
 bot.run(TOKEN)
