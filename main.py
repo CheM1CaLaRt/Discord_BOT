@@ -1,4 +1,4 @@
-from config import TOKEN, TXTROB, AUDIOROB, WEATHER_API_KEY, STEAM_API_KEY
+from config import TOKEN, TXTROB, AUDIOROB, WEATHER_API_KEY
 import discord
 from discord.ext import commands
 from gtts import gTTS
@@ -6,7 +6,7 @@ import os
 import requests
 from dotenv import load_dotenv
 import asyncio
-
+import random
 
 
 
@@ -43,6 +43,11 @@ intents.guilds = True
 intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
+
+welcome_text = [" держи мандаринку!", " возьми меня!", " зашел уверено!", " ты красавчик!", " дотерял мою мандаринку!", " не вижу моего мандаринка!"]
+
+# Specify the directory containing the MP3 files
+mp3_directory = r'enter'  # Replace with the path to your MP3 directory
 
 # Словарь радиостанций
 radio_stations = {
@@ -343,15 +348,28 @@ async def on_voice_state_update(member, before, after):
 
         # Отправляем сообщение в чат
         if text_channel is not None:
-            await text_channel.send(f"{member.display_name}, держи мандаринку!")
+            random_text = random.choice(welcome_text)
+            await text_channel.send(f"{member.display_name}, {random_text}")
 
         await asyncio.sleep(1)
+
+        # List all MP3 files in the directory
+        mp3_files = [f for f in os.listdir(mp3_directory) if f.endswith('.mp3')]
+        if not mp3_files:
+            await text_channel.send("No MP3 files found in the directory!")
+            return
+
+        # Choose a random MP3 file from the directory
+        random_mp3 = random.choice(mp3_files)
+
+        # Full path to the selected MP3 file
+        random_mp3_path = os.path.join(mp3_directory, random_mp3)
 
         # Воспроизводим MP3 файл
         ffmpeg_options = {
             'executable': r'C:\ffmpeg\bin\ffmpeg.exe',  # Укажите полный путь к ffmpeg.exe
         }
-        voice_client.play(discord.FFmpegPCMAudio('est.mp3', **ffmpeg_options))
+        voice_client.play(discord.FFmpegPCMAudio(random_mp3_path, **ffmpeg_options))
 
         # Ждем окончания воспроизведения
         while voice_client.is_playing():
