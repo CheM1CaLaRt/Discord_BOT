@@ -52,6 +52,7 @@ mp3_directory = r'enter'  # Replace with the path to your MP3 directory
 # Словарь радиостанций
 radio_stations = {
     "Gaming": "https://gaming.stream.laut.fm/gaming",
+    "Nomercy Radio(rock)": "https://listen5.myradio24.com/nomercy",
     "Record": "https://radiorecord.hostingradio.ru/rr_main96.aacp",
     "Tiesto": "https://radiorecord.hostingradio.ru/tiesto96.aacp",
     "David Guetta": "https://radiorecord.hostingradio.ru/guetta96.aacp",
